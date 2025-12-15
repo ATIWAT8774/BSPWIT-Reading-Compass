@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ห้องสมุดออนไลน์</title>
+    <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --secondary: #a29bfe;
+            --bg: #dfe6e9;
+            --white: #ffffff;
+            --text: #2d3436;
+            --success: #00b894;
+            --danger: #d63031;
+            --warning: #fdcb6e;
+        }
+
+        * { box-sizing: border-box; outline: none; }
+        body { margin: 0; font-family: 'Mitr', sans-serif; background-color: var(--bg); color: var(--text); padding-bottom: 50px; }
+        
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Login Screen */
+        #screen-login {
+            height: 100vh; display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #6c5ce7, #0984e3);
+        }
+        .login-card {
+            background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
+            padding: 40px; border-radius: 20px; width: 90%; max-width: 400px;
+            text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .login-icon { font-size: 3rem; color: var(--primary); margin-bottom: 10px; }
+
+        /* General UI */
+        .form-control {
+            width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 10px;
+            margin-bottom: 15px; font-family: 'Mitr'; font-size: 1rem; transition: 0.3s;
+        }
+        .form-control:focus { border-color: var(--primary); }
+        .btn {
+            width: 100%; padding: 12px; border: none; border-radius: 10px;
+            background: var(--primary); color: white; font-size: 1rem; cursor: pointer;
+            transition: 0.3s; font-family: 'Mitr';
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(108, 92, 231, 0.3); }
+        .btn-sm { padding: 5px 10px; width: auto; font-size: 0.9rem; }
+        .btn-danger { background: var(--danger); }
+        .btn-success { background: var(--success); }
+        .btn-outline { background: transparent; border: 2px solid #ddd; color: #555; }
+
+        /* Header with Logo */
+        .header {
+            background: var(--white); padding: 10px 20px; display: flex; 
+            justify-content: space-between; align-items: center; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 10;
+        }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .logo-img { width: 50px; height: 50px; object-fit: contain; } /* สไตล์โลโก้ */
+        .user-info h3 { margin: 0; font-size: 1.1rem; }
+        .user-info small { color: var(--primary); font-weight: 500; }
+        
+        .container { max-width: 800px; margin: 20px auto; padding: 0 20px; }
+
+        .slider-box {
+            width: 100%;
+            /* บังคับอัตราส่วน 4 ต่อ 1 (มาจาก 1600 / 400) */
+            aspect-ratio: 4 / 1; 
+            
+            /* ลบ height เดิมทิ้ง ให้มันคำนวณเอง */
+            height: auto; 
+            
+            background: #b2bec3; 
+            border-radius: 15px; 
+            overflow: hidden; 
+            position: relative; 
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .slide-img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: fill; /* บังคับให้ภาพยืดเต็มกรอบตามสัดส่วนเป๊ะๆ */
+            position: absolute; 
+            opacity: 0; 
+            transition: 0.5s; 
+        }
+        
+        .slide-img.active { opacity: 1; }
+
+        /* Grid */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; }
+        .menu-item {
+            background: var(--white); padding: 20px; border-radius: 15px; text-align: center;
+            cursor: pointer; transition: 0.3s; box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        }
+        .menu-item:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .menu-icon { font-size: 2rem; color: var(--primary); display: block; margin-bottom: 10px; }
+
+        /* Modal */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(3px);
+            display: none; align-items: center; justify-content: center; z-index: 99;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: var(--white); width: 90%; max-width: 500px; max-height: 85vh;
+            overflow-y: auto; padding: 25px; border-radius: 20px; position: relative;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+        }
+        .close-btn {
+            position: absolute; top: 15px; right: 15px; border: none; background: #f1f2f6;
+            width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex;
+            align-items: center; justify-content: center; font-size: 1.2rem;
+        }
+
+        /* List Items */
+        .list-item {
+            background: #fff; padding: 15px; border-radius: 10px; margin-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; color: white; }
+        .bg-ok { background: var(--success); }
+        .bg-wait { background: var(--warning); color: #333; }
+        .bg-used { background: var(--danger); }
+        .bg-new { background: #0984e3; }
+        .bg-reject { background: var(--danger); }
+
+        .prog-track { background: #eee; height: 15px; border-radius: 10px; overflow: hidden; margin: 15px 0; }
+        .prog-fill { height: 100%; background: linear-gradient(90deg, var(--secondary), var(--primary)); width: 0%; transition: 0.5s; }
+
+        /* --- Leaderboard Styles --- */
+        .rank-item {
+            display: flex; align-items: center; margin-bottom: 12px;
+            background: #fff; padding: 10px; border-radius: 10px;
+        }
+        .rank-num {
+            width: 30px; font-weight: bold; color: #888; text-align: center; font-size: 1.1rem;
+        }
+        .rank-info { flex: 1; padding: 0 10px; }
+        .rank-name { font-size: 0.95rem; font-weight: 500; margin-bottom: 4px; display: block; }
+        
+        /* กราฟหลอด */
+        .bar-container {
+            background: #f1f2f6; height: 10px; border-radius: 5px;
+            width: 100%; overflow: hidden; position: relative;
+        }
+        .bar-fill {
+            height: 100%; border-radius: 5px;
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            width: 0%; transition: width 1s ease-out;
+        }
+        .rank-count { font-weight: bold; color: var(--primary); font-size: 0.9rem; margin-left: 10px; min-width: 60px; text-align: right; }
+
+        /* สีเหรียญรางวัล */
+        .rank-1 .rank-num { color: #f1c40f; text-shadow: 0 2px 4px rgba(0,0,0,0.1); font-size: 1.5rem; } /* ทอง */
+        .rank-2 .rank-num { color: #95a5a6; font-size: 1.3rem; } /* เงิน */
+        .rank-3 .rank-num { color: #e67e22; font-size: 1.3rem; } /* ทองแดง */
+
+        /* --- Notification Badge (วงกลมแดง) --- */
+        .menu-card { position: relative; } /* เพื่อให้วงกลมเกาะมุมการ์ดได้ */
+        
+        .notify-badge {
+            position: absolute;
+            top: 10px; right: 10px;
+            background: #ff4757; /* สีแดงสวยๆ */
+            color: white;
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 0.9rem;
+            box-shadow: 0 4px 10px rgba(255, 71, 87, 0.4);
+            z-index: 5;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        /* Animation เด้งดึ๋งเวลาเลขขึ้น */
+        .notify-badge:not(.hidden) { animation: popIn 0.5s; }
+        @keyframes popIn { 
+            0% { transform: scale(0); } 
+            50% { transform: scale(1.2); } 
+            100% { transform: scale(1); } 
+        }
+
+        @media(max-width: 500px) { .slider-box { height: 160px; } .grid { grid-template-columns: 1fr 1fr; } }
+    </style>
+</head>
+<body>
+
+    <div id="page-login" class="fade-in">
+        <div id="screen-login">
+            <div class="login-card">
+                <i class="bi bi-journal-bookmark-fill login-icon"></i>
+                <h2 style="margin-top:0;">เข้าสู่ระบบ</h2>
+                <p style="color:#666; margin-bottom:20px;">ห้องสมุดออนไลน์</p>
+                <form onsubmit="handleLogin(event)">
+                    <input id="log_id" class="form-control" placeholder="รหัสนักเรียน / ID" required>
+                    <input id="log_dob" class="form-control" placeholder="วันเกิด (เช่น 15/05/2007)" required>
+                    <button type="submit" class="btn">Login</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-student" class="hidden fade-in">
+        <div class="header">
+            <div class="brand">
+                <img src="https://i.postimg.cc/NGpdXZ0t/Blue_and_Gray_Illustrative_Digital_Book_Library_Logo.png" class="logo-img" alt="Logo">
+                <div class="user-info">
+                    <h3 id="st-name">Name</h3>
+                    <small>นักเรียน</small>
+                </div>
+            </div>
+            <button onclick="logout()" class="btn btn-sm btn-danger"><i class="bi bi-box-arrow-right"></i></button>
+        </div>
+        <div class="container">
+            <div id="st-slider" class="slider-box"></div>
+            <div class="grid">
+                <div class="menu-item" onclick="openRecord()">
+                    <i class="bi bi-pencil-square menu-icon"></i> <span>บันทึกการอ่าน</span>
+                </div>
+                <div class="menu-item" onclick="openHistory()">
+                    <i class="bi bi-clock-history menu-icon"></i> <span>ประวัติ</span>
+                </div>
+                <div class="menu-item" onclick="openLeaderboard()">
+                    <i class="bi bi-bar-chart-line-fill menu-icon"></i> </i>
+                    <span>จัดอันดับนักอ่าน</span>
+                </div>
+                <div class="menu-item" onclick="openCoupons()">
+                    <i class="bi bi-ticket-perforated-fill menu-icon"></i> <span>คูปอง</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-librarian" class="hidden fade-in">
+        <div class="header">
+            <div class="brand">
+                <img src="https://i.postimg.cc/NGpdXZ0t/Blue_and_Gray_Illustrative_Digital_Book_Library_Logo.png" class="logo-img" alt="Logo">
+                <div class="user-info">
+                    <h3 id="lib-name">Name</h3>
+                    <small>บรรณารักษ์</small>
+                </div>
+            </div>
+            <button onclick="logout()" class="btn btn-sm btn-danger"><i class="bi bi-box-arrow-right"></i></button>
+        </div>
+        <div class="container">
+            <div id="lib-slider" class="slider-box"></div>
+            <div class="grid">
+                <div class="menu-item" onclick="openPending()" style="position:relative;">
+                    
+                    <div id="badge-pending" class="notify-badge hidden">0</div>
+
+                    <i class="bi bi-check-circle-fill menu-icon"></i> 
+                    <span>คำขออนุมัติ</span>
+                </div>
+                <div class="menu-item" onclick="openAddBook()">
+                    <i class="bi bi-journal-plus menu-icon"></i> <span>เพิ่มหนังสือ</span>
+                </div>
+                <div class="menu-item" onclick="openRedeem()">
+                    <i class="bi bi-qr-code-scan menu-icon"></i> <span>แลกคูปอง</span>
+                </div>
+                <div class="menu-item" onclick="openLeaderboard()">
+                    <i class="bi bi-bar-chart-line-fill menu-icon"></i>
+                    <span>ดูอันดับยอดอ่าน</span>
+                </div>
+                <div class="menu-item" onclick="openUsers()">
+                    <i class="bi bi-people-fill menu-icon"></i> <span>จัดการผู้ใช้</span>
+                </div>
+                <div class="menu-item" onclick="openSlides()">
+                    <i class="bi bi-images menu-icon"></i> <span>จัดการสไลด์</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-record" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal('modal-record')">&times;</button>
+            <h3>บันทึกการอ่าน</h3>
+            <form onsubmit="submitRecord(event)">
+                <input list="books-dl" id="rec-search" class="form-control" placeholder="ค้นหาชื่อหนังสือ..." onchange="onBookSelect()" required>
+                <datalist id="books-dl"></datalist>
+                
+                <div style="background:#f1f2f6; padding:10px; border-radius:10px; margin-bottom:10px; font-size:0.9rem;">
+                    <b>หนังสือ:</b> <span id="auto-title" style="color:var(--primary);">-</span><br>
+                    ผู้แต่ง: <span id="auto-auth">-</span>
+                </div>
+
+                <textarea id="rec-sum" class="form-control" rows="3" placeholder="เรื่องย่อ" required></textarea>
+                <textarea id="rec-less" class="form-control" rows="2" placeholder="ข้อคิด" required></textarea>
+                <button type="submit" class="btn">บันทึก</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-history" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal('modal-history')">&times;</button>
+            <h3>ประวัติการอ่าน</h3>
+            <div class="prog-track"><div id="prog-bar" class="prog-fill"></div></div>
+            <div style="text-align:center; margin-bottom:15px;"><small id="prog-text">0/10 เล่ม</small></div>
+            <div id="history-list"></div>
+        </div>
+    </div>
+
+    <div id="modal-coupons" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal('modal-coupons')">&times;</button>
+            <h3>คูปองของฉัน</h3>
+            <div id="coupon-list" style="margin-top:10px;"></div>
+        </div>
+    </div>
+
+    <div id="modal-pending" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal('modal-pending')">&times;</button>
+            <h3>รายการรอตรวจสอบ</h3>
+            <div id="pending-list" style="margin-top:10px;"></div>
+        </div>
+    </div>
+
+    <div id="modal-view-detail" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal('modal-view-detail')">&times;</button>
+            <h3>รายละเอียดการอ่าน</h3>
+            <div style="background:#f8f9fa; padding:15px; border-radius:12px; margin-bottom:15px;">
+                <p><strong>นักเรียน ID:</strong> <span id="view-sid"></span></p>
+                <p><strong>หนังสือ:</strong> <span id="view-title" style="color:var(--primary); font-weight:500;"></span></p>
+                <hr style="border:0; border-top:1px dashed #ddd; margin:10px 0;">
+                <p><strong>เรื่องย่อ:</strong></p>
+                <p id="view-sum" style="color:#555; background:#fff; padding:8px; border-radius:8px;"></p>
+                <p><strong>ข้อคิด:</strong></p>
+                <p id="view-less" style="color:#555; background:#fff; padding:8px; border-radius:8px;"></p>
+            </div>
+            
+            <div style="display:flex; gap:10px;">
+                <button id="btn-approve" class="btn btn-success">อนุมัติ (ผ่าน)</button>
+                <button id="btn-reject" class="btn btn-danger">ไม่อนุมัติ (ตีกลับ)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-users" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal('modal-users')">&times;</button>
+            <h3>จัดการผู้ใช้</h3>
+            <form onsubmit="addUser(event)" style="background:#f8f9fa; padding:10px; border-radius:10px; margin-bottom:15px;">
+                <div style="display:flex; gap:5px;">
+                    <input id="u-id" class="form-control" placeholder="ID" required style="margin:0;">
+                    <input id="u-birth" class="form-control" placeholder="วันเกิด" required style="margin:0;">
+                </div>
+                <div style="display:flex; gap:5px; margin-top:5px;">
+                    <input id="u-name" class="form-control" placeholder="ชื่อ" required style="margin:0;">
+                    <input id="u-sur" class="form-control" placeholder="นามสกุล" required style="margin:0;">
+                </div>
+                <select id="u-role" class="form-control" style="margin-top:5px;">
+                    <option value="student">Student</option>
+                    <option value="librarian">Librarian</option>
+                </select>
+                <button type="submit" class="btn btn-sm btn-success" style="margin-top:5px; width:100%;">เพิ่ม</button>
+            </form>
+            <div id="users-list"></div>
+        </div>
+    </div>
+    
+    <div id="modal-slides" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal('modal-slides')">&times;</button>
+            <h3>จัดการสไลด์</h3>
+            <form onsubmit="addSlide(event)" style="margin-bottom:15px;">
+                <input id="s-url" class="form-control" placeholder="URL รูปภาพ" required>
+                <div style="display:flex; gap:5px;">
+                    <input id="s-title" class="form-control" placeholder="หัวข้อ">
+                    <input type="number" id="s-order" class="form-control" placeholder="ลำดับ" value="1">
+                </div>
+                <button type="submit" class="btn btn-sm btn-success" style="width:100%;">เพิ่มสไลด์</button>
+            </form>
+            <div id="slides-list"></div>
+        </div>
+    </div>
+
+    <div id="modal-addbook" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal('modal-addbook')">&times;</button>
+            <h3>เพิ่มหนังสือ</h3>
+            <form onsubmit="submitAddBook(event)">
+                <input id="nb-code" class="form-control" placeholder="รหัสหนังสือ" required>
+                <input id="nb-title" class="form-control" placeholder="ชื่อหนังสือ" required>
+                <input id="nb-auth" class="form-control" placeholder="ผู้แต่ง">
+                <input id="nb-pub" class="form-control" placeholder="สำนักพิมพ์">
+                <input id="nb-pages" type="number" class="form-control" placeholder="จำนวนหน้า">
+                <button type="submit" class="btn">บันทึก</button>
+            </form>
+        </div>
+    </div>
+    <div id="modal-redeem" class="modal">
+        <div class="modal-content" style="text-align:center;">
+            <button class="close-btn" onclick="closeModal('modal-redeem')">&times;</button>
+            <h3>แลกคูปอง</h3>
+            
+            <div id="redeem-step-1">
+                <i class="bi bi-qr-code-scan" style="font-size:3rem; color:#ccc;"></i>
+                <p style="color:#666; margin-top:10px;">กรอกรหัสคูปองเพื่อตรวจสอบ</p>
+                <form onsubmit="checkCoupon(event)" style="margin-top:15px;">
+                    <input id="rd-code" class="form-control" placeholder="CP-XXXX" style="text-align:center; font-size:1.5rem; letter-spacing:2px; text-transform:uppercase;" required>
+                    <button type="submit" class="btn">ตรวจสอบ (Check)</button>
+                </form>
+            </div>
+
+            <div id="redeem-step-2" class="hidden fade-in">
+                <div style="background:#f0fff4; border:2px solid #00b894; border-radius:15px; padding:20px; margin-bottom:20px;">
+                    <i class="bi bi-check-circle-fill" style="color:#00b894; font-size:2rem;"></i>
+                    <h4 style="margin:10px 0; color:#00b894;">คูปองถูกต้อง (เครื่องดื่ม ว.คาเฟ่ 1 แก้ว)</h4>
+                    <hr style="border:0; border-top:1px dashed #ccc; margin:15px 0;">
+                    
+                    <p style="margin:5px 0; font-size:0.9rem; color:#666;">เจ้าของคูปอง</p>
+                    <h2 id="show-owner-name" style="margin:0; color:#2d3436;">-</h2>
+                    <p id="show-owner-id" style="margin:5px 0; font-weight:bold; color:#6c5ce7;">ID: -</p>
+                </div>
+
+                <div style="display:flex; gap:10px;">
+                    <button onclick="resetRedeem()" class="btn" style="background:#ccc; color:#333;">ยกเลิก</button>
+                    <button onclick="confirmRedeem()" class="btn btn-danger">ยืนยันตัดคูปอง</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <div id="modal-leaderboard" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal('modal-leaderboard')">&times;</button>
+            <h3 style="text-align: center; margin-bottom: 5px;">🏆 อันดับยอดนักอ่าน</h3>
+            <p style="text-align: center; color: #777; font-size: 0.9rem; margin-bottom: 20px;">ใครอ่านเยอะที่สุดในโรงเรียน?</p>
+            
+            <div id="leaderboard-list">กำลังโหลด...</div>
+        </div>
+    </div>
+
+    <script>
+        // 🔴🔴🔴 ใส่ URL API ที่นี่ 🔴🔴🔴
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwQDe6UI07fVsyzjj53cHnFiuYITE94ub0dNhFy9Z5Y8Mcpy27mLiVwBwl9DKIJdo4Brg/exec';
+
+        let curUser = null;
+        let booksCache = [];
+        let slideTimer = null;
+
+        // --- Session ---
+        function checkSession() {
+            const u = localStorage.getItem('lib_user');
+            if(u) {
+                curUser = JSON.parse(u);
+                showPage(curUser.role === 'student' ? 'page-student' : 'page-librarian');
+                if(curUser.role==='student') {
+                    document.getElementById('st-name').innerText = curUser.name;
+                    loadSlides('st-slider');
+                } else {
+                    document.getElementById('lib-name').innerText = curUser.name;
+                    loadSlides('lib-slider');
+                }
+            }
+        }
+        window.onload = checkSession;
+
+        function logout() {
+            Swal.fire({
+                title: 'ออกจากระบบ?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'ใช่',
+                cancelButtonText: 'ไม่'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    localStorage.removeItem('lib_user');
+                    location.reload();
+                }
+            })
+        }
+
+        // --- Utils ---
+        async function api(data) {
+            try {
+                const r = await fetch(API_URL, { method:'POST', body:JSON.stringify(data) });
+                return await r.json();
+            } catch(e) { Swal.fire('Error', 'Connection Failed', 'error'); return {success:false}; }
+        }
+        function showPage(id) {
+            document.getElementById('page-login').classList.add('hidden');
+            document.getElementById('page-student').classList.add('hidden');
+            document.getElementById('page-librarian').classList.add('hidden');
+            document.getElementById(id).classList.remove('hidden');
+        }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        // --- Login ---
+        async function handleLogin(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            btn.innerText = 'Checking...'; btn.disabled = true;
+            
+            const res = await api({
+                action: 'login',
+                student_id: document.getElementById('log_id').value,
+                birthdate: document.getElementById('log_dob').value
+            });
+
+            if(res.success) {
+                localStorage.setItem('lib_user', JSON.stringify(res.user));
+                location.reload();
+            } else { Swal.fire('Login Failed', res.message, 'error'); }
+            btn.innerText = 'Login'; btn.disabled = false;
+        }
+
+        // --- Student ---
+        async function openRecord() {
+            document.getElementById('modal-record').classList.add('active');
+            const res = await api({ action: 'get_books_list' });
+            if(res.success) {
+                booksCache = res.data;
+                document.getElementById('books-dl').innerHTML = booksCache.map(b => `<option value="${b.title}">`).join('');
+            }
+        }
+        function onBookSelect() {
+            const v = document.getElementById('rec-search').value;
+            const b = booksCache.find(x => x.title === v);
+            if(b) {
+                document.getElementById('auto-title').innerText = b.title;
+                document.getElementById('auto-auth').innerText = b.author;
+            }
+        }
+        async function submitRecord(e) {
+            e.preventDefault();
+            const t = document.getElementById('auto-title').innerText;
+            if(t==='-') { Swal.fire('แจ้งเตือน','กรุณาเลือกหนังสือให้ถูกต้อง','warning'); return; }
+            
+            Swal.fire({
+                title: 'ยืนยันการบันทึก?',
+                text: "ตรวจสอบข้อมูลให้ถูกต้องก่อนส่ง",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'บันทึก'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    const res = await api({
+                        action: 'save_log', student_id: curUser.id, book_title: t,
+                        summary: document.getElementById('rec-sum').value,
+                        lesson: document.getElementById('rec-less').value
+                    });
+                    
+                    if(res.success) {
+                        Swal.fire('สำเร็จ', 'บันทึกเรียบร้อย', 'success');
+                        closeModal('modal-record'); e.target.reset();
+                    } else {
+                        Swal.fire('บันทึกไม่ได้', res.message, 'error');
+                    }
+                }
+            })
+        }
+        async function openHistory() {
+            document.getElementById('modal-history').classList.add('active');
+            const res = await api({ action: 'get_student_data', student_id: curUser.id });
+            const c = res.data.approved % 10;
+            document.getElementById('prog-bar').style.width = (c*10)+'%';
+            document.getElementById('prog-text').innerText = c+'/10 เล่ม';
+            document.getElementById('history-list').innerHTML = res.data.logs.map(l => {
+                let statusClass = 'bg-wait';
+                let statusText = 'รอตรวจ';
+                if(l.status === 'approved') { statusClass = 'bg-ok'; statusText = 'อนุมัติ'; }
+                if(l.status === 'rejected') { statusClass = 'bg-reject'; statusText = 'ไม่ผ่าน'; }
+                
+                return `<div class="list-item">
+                    <div><b>${l.title}</b><br><small>${new Date(l.date).toLocaleDateString()}</small></div>
+                    <span class="badge ${statusClass}">${statusText}</span>
+                </div>`
+            }).join('');
+        }
+        async function openCoupons() {
+            document.getElementById('modal-coupons').classList.add('active');
+            const res = await api({ action: 'get_student_data', student_id: curUser.id });
+            document.getElementById('coupon-list').innerHTML = res.data.coupons.map(c => `
+                <div class="list-item">
+                    <div><b>${c.code}</b><br><small>${c.status==='New'?'50 บาท':'ใช้แล้ว'}</small></div>
+                    <span class="badge ${c.status==='New'?'bg-new':'bg-used'}">${c.status}</span>
+                </div>
+            `).join('');
+        }
+
+        // --- Librarian ---
+        async function openPending() {
+            document.getElementById('modal-pending').classList.add('active');
+            const res = await api({ action: 'get_pending_logs' });
+            document.getElementById('pending-list').innerHTML = res.data.map(l => `
+                <div class="list-item" style="display:block;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <b>ID: ${l.sid}</b> <small>${l.title}</small>
+                    </div>
+                    <button onclick="viewDetail('${l.id}', '${l.sid}', '${l.title}', \`${l.summary}\`, \`${l.lesson}\`)" 
+                            class="btn btn-sm btn-outline" style="width:100%;">
+                        <i class="bi bi-eye"></i> ตรวจสอบ
+                    </button>
+                </div>
+            `).join('') || '<p align="center">ไม่มีรายการ</p>';
+        }
+
+        // Function เปิดดูรายละเอียดก่อนอนุมัติ
+        function viewDetail(id, sid, title, sum, less) {
+            closeModal('modal-pending');
+            document.getElementById('modal-view-detail').classList.add('active');
+            
+            document.getElementById('view-sid').innerText = sid;
+            document.getElementById('view-title').innerText = title;
+            document.getElementById('view-sum').innerText = sum;
+            document.getElementById('view-less').innerText = less;
+
+            // ผูกฟังก์ชันปุ่ม
+            document.getElementById('btn-approve').onclick = () => processLog(id, sid, 'approve');
+            document.getElementById('btn-reject').onclick = () => processLog(id, sid, 'reject');
+        }
+
+        async function processLog(id, sid, type) {
+            const actionText = type === 'approve' ? 'อนุมัติ' : 'ไม่อนุมัติ';
+            const actionApi = type === 'approve' ? 'approve_log' : 'reject_log';
+            const icon = type === 'approve' ? 'success' : 'warning';
+
+            Swal.fire({
+                title: `ยืนยัน${actionText}?`,
+                icon: icon,
+                showCancelButton: true,
+                confirmButtonText: 'ยืนยัน'
+            }).then(async (result) => {
+                if(result.isConfirmed) {
+                    const res = await api({ action: actionApi, log_id: id, student_id: sid });
+                    Swal.fire('เรียบร้อย', res.message, 'success');
+                    closeModal('modal-view-detail');
+                    openPending(); // กลับไปหน้า List
+                }
+            });
+        }
+
+        function openAddBook() { document.getElementById('modal-addbook').classList.add('active'); }
+        async function submitAddBook(e) {
+            e.preventDefault();
+            await api({
+                action: 'add_book', code:document.getElementById('nb-code').value, title:document.getElementById('nb-title').value,
+                author:document.getElementById('nb-auth').value, publisher:document.getElementById('nb-pub').value,
+                pages:document.getElementById('nb-pages').value, year:''
+            });
+            Swal.fire('Success', 'เพิ่มหนังสือแล้ว', 'success'); closeModal('modal-addbook'); e.target.reset();
+        }
+        // --- ส่วนแลกคูปอง (แบบใหม่) ---
+        
+        function openRedeem() {
+            document.getElementById('modal-redeem').classList.add('active');
+            resetRedeem(); // รีเซ็ตหน้าจอทุกครั้งที่เปิด
+        }
+
+        function resetRedeem() {
+            // โชว์ Step 1 ซ่อน Step 2
+            document.getElementById('redeem-step-1').classList.remove('hidden');
+            document.getElementById('redeem-step-2').classList.add('hidden');
+            document.getElementById('rd-code').value = '';
+            document.getElementById('rd-code').focus();
+        }
+
+        async function checkCoupon(e) {
+            e.preventDefault();
+            const code = document.getElementById('rd-code').value.trim();
+            if(!code) return;
+
+            // เรียก API ไปเช็ค
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerText;
+            btn.innerText = 'กำลังหา...'; btn.disabled = true;
+
+            const res = await api({ action: 'check_coupon', coupon_code: code });
+
+            if(res.success) {
+                // เจอคูปอง -> โชว์ Step 2
+                document.getElementById('redeem-step-1').classList.add('hidden');
+                document.getElementById('redeem-step-2').classList.remove('hidden');
+                
+                // ใส่ข้อมูล
+                document.getElementById('show-owner-name').innerText = res.data.name;
+                document.getElementById('show-owner-id').innerText = 'รหัส: ' + res.data.sid;
+                
+                // เก็บ Code ไว้ใช้ตอนยืนยัน
+                window.currentRedeemCode = res.data.code;
+            } else {
+                Swal.fire('ไม่พบข้อมูล', res.message, 'error');
+            }
+            
+            btn.innerText = originalText; btn.disabled = false;
+        }
+
+        async function confirmRedeem() {
+            const code = window.currentRedeemCode;
+            
+            const res = await api({ 
+                action: 'redeem_coupon', 
+                coupon_code: code, 
+                librarian_name: curUser.name 
+            });
+
+            if(res.success) {
+                Swal.fire('สำเร็จ', 'ตัดคูปองเรียบร้อยแล้ว!', 'success');
+                closeModal('modal-redeem');
+            } else {
+                Swal.fire('Error', res.message, 'error');
+            }
+        }
+        async function openUsers() {
+            document.getElementById('modal-users').classList.add('active');
+            loadUsers();
+        }
+        async function loadUsers() {
+            const res = await api({ action:'get_users' });
+            document.getElementById('users-list').innerHTML = res.data.map(u => `
+                <div class="list-item">
+                    <div><b>${u.id}</b> ${u.name}</div>
+                    <button onclick="delUser('${u.id}')" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button>
+                </div>
+            `).join('');
+        }
+        async function addUser(e) {
+            e.preventDefault();
+            await api({
+                action:'save_user', id:document.getElementById('u-id').value,
+                name:document.getElementById('u-name').value, surname:document.getElementById('u-sur').value,
+                birth:document.getElementById('u-birth').value, role:document.getElementById('u-role').value
+            });
+            e.target.reset(); loadUsers();
+        }
+        async function delUser(id) { 
+             Swal.fire({ title: 'ลบผู้ใช้?', showCancelButton: true }).then(async (r) => {
+                 if(r.isConfirmed) { await api({action:'delete_user', student_id:id}); loadUsers(); }
+             })
+        }
+        async function openSlides() {
+            document.getElementById('modal-slides').classList.add('active');
+            loadEditSlides();
+        }
+        async function loadEditSlides() {
+            const res = await api({ action:'get_slides', onlyActive:false });
+            document.getElementById('slides-list').innerHTML = res.data.map(s => `
+                <div class="list-item">
+                    <img src="${s.url}" width="40" height="30" style="object-fit:cover; border-radius:4px; margin-right:10px;">
+                    <div style="flex:1;">${s.title}</div>
+                    <button onclick="togSlide('${s.id}', ${!s.active})" class="btn btn-sm ${s.active?'btn-success':'btn-danger'}">${s.active?'ON':'OFF'}</button>
+                    <button onclick="delSlide('${s.id}')" class="btn btn-sm btn-danger" style="margin-left:5px;"><i class="bi bi-trash"></i></button>
+                </div>
+            `).join('');
+        }
+        async function addSlide(e) {
+            e.preventDefault();
+            await api({ action:'save_slide', url:document.getElementById('s-url').value, title:document.getElementById('s-title').value, order:document.getElementById('s-order').value });
+            e.target.reset(); loadEditSlides();
+        }
+        async function togSlide(id, st) { await api({action:'toggle_slide', id:id, active:st}); loadEditSlides(); }
+        async function delSlide(id) { 
+            Swal.fire({ title: 'ลบสไลด์?', showCancelButton: true }).then(async (r) => {
+                 if(r.isConfirmed) { await api({action:'delete_slide', slide_id:id}); loadEditSlides(); }
+            })
+        }
+
+        // --- Slider ---
+        async function loadSlides(elemId) {
+            const box = document.getElementById(elemId);
+            const res = await api({ action:'get_slides', onlyActive:true });
+            if(res.success && res.data.length > 0) {
+                box.innerHTML = res.data.map((s,i) => `<img src="${s.url}" class="slide-img ${i===0?'active':''}">`).join('');
+                let idx=0; 
+                if(slideTimer) clearInterval(slideTimer);
+                slideTimer = setInterval(() => {
+                    idx = (idx+1)%res.data.length;
+                    box.querySelectorAll('.slide-img').forEach((el,i) => el.classList.toggle('active', i===idx));
+                }, 5000);
+            } else { box.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#aaa;">No Slides</div>'; }
+        }
+
+        // --- Leaderboard Function ---
+        async function openLeaderboard() {
+            document.getElementById('modal-leaderboard').classList.add('active');
+            const list = document.getElementById('leaderboard-list');
+            list.innerHTML = '<div style="text-align:center; padding:20px;">กำลังคำนวณอันดับ...</div>';
+
+            const res = await api({ action: 'get_leaderboard' });
+            
+            if (res.success && res.data.length > 0) {
+                // หาค่ามากสุดเพื่อคำนวณ % ความยาวหลอด
+                const maxCount = res.data[0].count;
+
+                list.innerHTML = res.data.map((u, index) => {
+                    const rank = index + 1;
+                    const percent = (u.count / maxCount) * 100;
+                    
+                    // ไอคอนเหรียญสำหรับ 1-3
+                    let rankDisplay = rank;
+                    if(rank === 1) rankDisplay = '<i class="bi bi-trophy-fill"></i>';
+                    else if(rank === 2) rankDisplay = '<i class="bi bi-medal-fill"></i>';
+                    else if(rank === 3) rankDisplay = '<i class="bi bi-award-fill"></i>';
+
+                    return `
+                    <div class="rank-item rank-${rank}">
+                        <div class="rank-num">${rankDisplay}</div>
+                        <div class="rank-info">
+                            <span class="rank-name">${u.name}</span>
+                            <div class="bar-container">
+                                <div class="bar-fill" style="width: ${percent}%"></div>
+                            </div>
+                        </div>
+                        <div class="rank-count">${u.count} เล่ม</div>
+                    </div>
+                    `;
+                }).join('');
+            } else {
+                list.innerHTML = '<div style="text-align:center; color:#999;">ยังไม่มีข้อมูลการอ่าน</div>';
+            }
+        }
+
+        // --- 🔄 Auto Refresh Logic (สำคัญมาก) ---
+        
+        let updateInterval = null;
+
+        // ฟังก์ชันเริ่มระบบอัปเดตอัตโนมัติ (เรียกเมื่อบรรณารักษ์ Login)
+        function startAutoUpdate() {
+            // เรียกครั้งแรกทันที
+            checkPendingCount();
+            
+            // ตั้งเวลาให้เรียกซ้ำทุกๆ 5 วินาที (5000 ms)
+            if(updateInterval) clearInterval(updateInterval);
+            updateInterval = setInterval(checkPendingCount, 5000);
+        }
+
+        // ฟังก์ชันหยุดอัปเดต (เรียกเมื่อ Logout)
+        function stopAutoUpdate() {
+            if(updateInterval) clearInterval(updateInterval);
+        }
+
+        // ฟังก์ชันเช็คจำนวนงานค้าง
+        async function checkPendingCount() {
+            // เช็คเฉพาะตอนอยู่ที่หน้าบรรณารักษ์
+            if(!curUser || curUser.role !== 'librarian') return;
+
+            // เรียก API แบบเงียบๆ (ไม่โชว์ Loading)
+            try {
+                // ใช้ fetch ตรงๆ เพื่อไม่ให้ไปกวนฟังก์ชัน api() หลักที่มี alert error
+                const r = await fetch(API_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ action: 'get_pending_logs' }) 
+                });
+                const res = await r.json();
+
+                if(res.success) {
+                    const count = res.data.length;
+                    const badge = document.getElementById('badge-pending');
+                    
+                    if(count > 0) {
+                        badge.innerText = count;
+                        badge.classList.remove('hidden'); // โชว์วงกลม
+                    } else {
+                        badge.classList.add('hidden'); // ซ่อนวงกลม
+                    }
+                }
+            } catch(e) {
+                console.log("Auto update failed (Internet might be slow)");
+            }
+        }
+
+        // --- แก้ไขฟังก์ชัน Session และ Login เพื่อสั่งเปิด/ปิดระบบ ---
+
+        // 1. แก้ไข checkSession (เพิ่มบรรทัด startAutoUpdate)
+        function checkSession() {
+            const u = localStorage.getItem('lib_user');
+            if(u) {
+                curUser = JSON.parse(u);
+                showPage(curUser.role === 'student' ? 'page-student' : 'page-librarian');
+                if(curUser.role === 'student') {
+                    document.getElementById('st-name').innerText = curUser.name;
+                    loadSlides('st-slider');
+                } else {
+                    document.getElementById('lib-name').innerText = curUser.name;
+                    loadSlides('lib-slider');
+                    startAutoUpdate(); // ✅ เริ่มทำงานอัตโนมัติเมื่อ Refresh หน้า
+                }
+            }
+        }
+
+        // 2. แก้ไข handleLogin (เพิ่มบรรทัด startAutoUpdate)
+        async function handleLogin(e) {
+            // ... (โค้ดเดิม) ...
+            if(res.success) {
+                localStorage.setItem('lib_user', JSON.stringify(res.user));
+                
+                // ถ้าเป็นบรรณารักษ์ ให้เริ่มอัปเดตทันที
+                if(res.user.role === 'librarian') {
+                    startAutoUpdate(); // ✅ เริ่มทำงาน
+                }
+                
+                location.reload();
+            }
+            // ...
+        }
+
+        // 3. แก้ไข logout (เพิ่ม stopAutoUpdate)
+        function logout() {
+            Swal.fire({
+                title: 'ออกจากระบบ?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'ใช่',
+                cancelButtonText: 'ไม่'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    stopAutoUpdate(); // ✅ หยุดทำงาน
+                    localStorage.removeItem('lib_user');
+                    location.reload();
+                }
+            })
+        }
+        
+    </script>
+</body>
+</html>
